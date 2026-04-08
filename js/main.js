@@ -200,6 +200,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const talentForm = document.getElementById('talent-form');
+  if (talentForm) {
+    talentForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const btn = talentForm.querySelector('.btn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span>Request Received!</span>';
+      btn.style.background = 'linear-gradient(135deg, #00ff88, #00d4ff)';
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.background = '';
+        talentForm.reset();
+      }, 3000);
+    });
+  }
+
   // ── Typed effect for hero ──
   const typedEl = document.querySelector('.typed-text');
   if (typedEl) {
