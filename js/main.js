@@ -181,38 +181,125 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // ── Form validation helpers ──
+  const ERROR_ICON = '<svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm-.75 3.75a.75.75 0 0 1 1.5 0v3.5a.75.75 0 0 1-1.5 0v-3.5ZM8 11.5a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"/></svg>';
+
+  function showFieldError(field, message) {
+    clearFieldError(field);
+    field.classList.add('input-error');
+    const msg = document.createElement('span');
+    msg.className = 'form-error-msg';
+    msg.innerHTML = `${ERROR_ICON} ${message}`;
+    field.parentNode.appendChild(msg);
+  }
+
+  function clearFieldError(field) {
+    field.classList.remove('input-error');
+    const existing = field.parentNode.querySelector('.form-error-msg');
+    if (existing) existing.remove();
+  }
+
+  function getFieldError(field) {
+    if (field.validity.valueMissing) return 'This field is required.';
+    if (field.validity.typeMismatch && field.type === 'email') return 'Please enter a valid email address.';
+    if (field.validity.typeMismatch) return 'Please enter a valid value.';
+    if (field.validity.patternMismatch) return 'Please match the requested format.';
+    if (field.validity.tooShort) return `Please enter at least ${field.minLength} characters.`;
+    return field.validationMessage || 'Invalid input.';
+  }
+
+  function validateForm(formEl) {
+    let firstInvalid = null;
+    formEl.querySelectorAll('input, select, textarea').forEach(field => {
+      if (!field.checkValidity()) {
+        showFieldError(field, getFieldError(field));
+        if (!firstInvalid) firstInvalid = field;
+      } else {
+        clearFieldError(field);
+      }
+    });
+    if (firstInvalid) {
+      firstInvalid.focus();
+      return false;
+    }
+    return true;
+  }
+
+  function attachLiveValidation(formEl) {
+    formEl.querySelectorAll('input, select, textarea').forEach(field => {
+      field.addEventListener('input', () => {
+        if (field.classList.contains('input-error')) {
+          if (field.checkValidity()) clearFieldError(field);
+          else showFieldError(field, getFieldError(field));
+        }
+      });
+      field.addEventListener('blur', () => {
+        if (field.classList.contains('input-error')) {
+          if (field.checkValidity()) clearFieldError(field);
+          else showFieldError(field, getFieldError(field));
+        }
+      });
+    });
+  }
+
+  function showFormSuccess(formEl, btn, message) {
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<span>${message}</span>`;
+    btn.style.background = 'linear-gradient(135deg, #00ff88, #00d4ff)';
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.style.background = '';
+      formEl.reset();
+      formEl.querySelectorAll('.input-error').forEach(f => clearFieldError(f));
+    }, 3000);
+  }
+
   // ── Contact form ──
   const form = document.getElementById('contact-form');
   if (form) {
+    const subjectSelect = document.getElementById('subject');
+    const otherSubjectGroup = document.getElementById('other-subject-group');
+    const otherSubjectInput = document.getElementById('other-subject');
+
+    subjectSelect.addEventListener('change', () => {
+      const isOther = subjectSelect.value === 'other';
+      otherSubjectGroup.style.display = isOther ? '' : 'none';
+      otherSubjectInput.required = isOther;
+      if (!isOther) {
+        otherSubjectInput.value = '';
+        clearFieldError(otherSubjectInput);
+      }
+    });
+
+    attachLiveValidation(form);
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-
-      const btn = form.querySelector('.btn');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '<span>Message Sent!</span>';
-      btn.style.background = 'linear-gradient(135deg, #00ff88, #00d4ff)';
-
-      setTimeout(() => {
-        btn.innerHTML = originalText;
-        btn.style.background = '';
-        form.reset();
-      }, 3000);
+      if (!validateForm(form)) return;
+      showFormSuccess(form, form.querySelector('.btn'), 'Message Sent!');
     });
   }
 
   const talentForm = document.getElementById('talent-form');
   if (talentForm) {
+    const roleSelect = document.getElementById('talent-role');
+    const otherRoleGroup = document.getElementById('other-role-group');
+    const otherRoleInput = document.getElementById('talent-other-role');
+
+    roleSelect.addEventListener('change', () => {
+      const isOther = roleSelect.value === 'other';
+      otherRoleGroup.style.display = isOther ? '' : 'none';
+      otherRoleInput.required = isOther;
+      if (!isOther) {
+        otherRoleInput.value = '';
+        clearFieldError(otherRoleInput);
+      }
+    });
+
+    attachLiveValidation(talentForm);
     talentForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const btn = talentForm.querySelector('.btn');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '<span>Request Received!</span>';
-      btn.style.background = 'linear-gradient(135deg, #00ff88, #00d4ff)';
-      setTimeout(() => {
-        btn.innerHTML = originalText;
-        btn.style.background = '';
-        talentForm.reset();
-      }, 3000);
+      if (!validateForm(talentForm)) return;
+      showFormSuccess(talentForm, talentForm.querySelector('.btn'), 'Request Received!');
     });
   }
 
